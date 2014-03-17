@@ -40,6 +40,7 @@
 
 static uint8_t euklid_length[NUM_TRACKS];
 static uint8_t euklid_steps[NUM_TRACKS];
+static uint8_t euklid_rotation[NUM_TRACKS];
 
 static uint16_t euklid_patternBuffer;	/**< 16 bits for maximum 16 steps. 1 is a note 0 is a pause*/
 
@@ -53,6 +54,7 @@ void euklid_init()
 	{
 		euklid_length[i] = 16;
 		euklid_steps[i] = 4;
+		euklid_rotation[i] = 0;
 	}
 
 	euklid_patternBuffer = 0;
@@ -153,9 +155,11 @@ void euklid_calcRecursive(uint8_t length, uint8_t steps, uint8_t iteration, uint
 //-----------------------------------------------------
 void euklid_generate(uint8_t trackNr, uint8_t patternNr)
 {
-	uint8_t length,steps;
+	uint8_t length,steps,rotation;
 	length = euklid_length[trackNr];
 	steps = euklid_steps[trackNr];
+	rotation = euklid_rotation[trackNr];
+
 	//todo ist das hier n�tig? zero steps sollte doch gehen...
 	if(steps==0)steps++;
 
@@ -169,7 +173,8 @@ void euklid_generate(uint8_t trackNr, uint8_t patternNr)
 	//let's calculate the new pattern
 	euklid_calcRecursive(length,steps,1,1,0); //always start with 1st iterations
 	//rotate resulting pattern
-	euklid_rotatePattern(length, seq_getTrackRotation(trackNr));
+	//euklid_rotatePattern(length, seq_getTrackRotation(trackNr));
+	euklid_rotatePattern(length, rotation);
 	//and store it in the active track
 	euklid_transferPattern(trackNr, patternNr);
 }
@@ -201,17 +206,29 @@ void euklid_setSteps(uint8_t trackNr, uint8_t value, uint8_t patternNr)
 	euklid_generate(trackNr, patternNr);
 }
 //-----------------------------------------------------
+uint8_t euklid_getRotation(uint8_t trackNr)
+{
+	return euklid_rotation[trackNr];
+}
+//-----------------------------------------------------
+void euklid_setRotation(uint8_t trackNr, uint8_t value, uint8_t patternNr)
+{
+	if(value<0) value=0;
+	if(value>euklid_length[trackNr]) value = euklid_rotation[trackNr];
+
+	euklid_rotation[trackNr] = value;
+	euklid_generate(trackNr, patternNr);
+}
+//-----------------------------------------------------
 void euklid_rotatePattern(uint8_t length, uint8_t amount)
 {
-	if( amount==0 || length==0 || amount%length==0  ) return; //Nothing to be done
+	if( amount==0 || length==1 || amount%length==0  ) return; //Nothing to be done
 
 	amount = amount%length;
-	length--; // For shifting left length-1 in loop below
 
-	int i;
-	for(i=0;i<amount;i++){
-		euklid_patternBuffer =  (euklid_patternBuffer<<1) | (euklid_patternBuffer>>length);
-	}
+	euklid_patternBuffer = (euklid_patternBuffer<<amount) | (euklid_patternBuffer>>(length-amount));
+
+	euklid_patternBuffer &= ~(0xffff<<length); //Remove "leftovers"
 }
 //-----------------------------------------------------
 void euklid_transferPattern(uint8_t trackNr, uint8_t patternNr)
@@ -223,7 +240,5 @@ void euklid_transferPattern(uint8_t trackNr, uint8_t patternNr)
 	if(len == 16)
 		len=0;
 	seq_patternSet.seq_patternLengthRotate[patternNr][trackNr].length=len;
-
-
 
 }
