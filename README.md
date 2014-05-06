@@ -50,6 +50,9 @@ Here are a list of changes that are now merged back into the Sonic Potions repos
 Instructions for building:
 --------------------------
 
+NOTE: It is now possible to use Make to build the firmware. I will update the instructions, in the meantime see: http://forum.sonic-potions.com/discussion/417/how-to-build-the-lxr-firmware-code-on-mac-os-10-8-and-above
+Which includes instructions for building on all platforms.
+
 1.  Install Eclipse Juno CDT (You could install a later version, but this is the version I have working)
 
 2.  Install the Eclipse GNU ARM plugin. Go into the help menu, Install new Software, add a site: http://gnuarmeclipse.sourceforge.net/updates. Then check the box to install that plugin.
